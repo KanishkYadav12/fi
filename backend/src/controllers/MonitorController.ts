@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { MonitorService } from '../services/MonitorService';
 
 export class MonitorController {
@@ -14,9 +15,6 @@ export class MonitorController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
       const { url, name } = req.body;
-      if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
-      }
       const monitor = await MonitorService.createMonitor({ url, name });
       res.status(201).json(monitor);
     } catch (error) {
@@ -27,7 +25,15 @@ export class MonitorController {
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      await MonitorService.deleteMonitor(id);
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid Monitor ID' });
+      }
+
+      const deleted = await MonitorService.deleteMonitor(id);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Monitor not found' });
+      }
       res.status(204).send();
     } catch (error) {
       next(error);

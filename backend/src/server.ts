@@ -16,18 +16,23 @@ mongoose
     // Start Scheduler
     SchedulerService.init();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+    });
+
+    // Handle graceful shutdown for the server instance
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received: closing HTTP server');
+      server.close(() => {
+        console.log('HTTP server closed');
+        mongoose.connection.close().then(() => {
+          console.log('MongoDB connection closed');
+          process.exit(0);
+        });
+      });
     });
   })
   .catch((err) => {
     console.error('Failed to connect to MongoDB', err);
     process.exit(1);
   });
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  mongoose.connection.close();
-  process.exit(0);
-});
